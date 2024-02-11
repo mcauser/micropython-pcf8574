@@ -22,13 +22,30 @@ At power on, all pins are driven HIGH and can be immediately used as inputs.
 
 Operating voltage: 2.5V - 5.5V
 
-## Example
 
-Copy the file to your device, using ampy, rshell, webrepl or compiling and deploying. eg.
+## Installation
+
+Using mip via mpremote:
 
 ```bash
-$ ampy put pcf8574.py
+$ mpremote mip install github:mcauser/micropython-pcf8574
+$ mpremote mip install github:mcauser/micropython-pcf8574/examples
 ```
+
+Using mip directly on a WiFi capable board:
+
+```python
+>>> import mip
+>>> mip.install("github:mcauser/micropython-pcf8574")
+>>> mip.install("github:mcauser/micropython-pcf8574/examples")
+```
+
+Manual installation:
+
+Copy `src/pcf8574.py` to the root directory of your device.
+
+
+## Examples
 
 **Basic Usage**
 
@@ -37,7 +54,7 @@ import pcf8574
 from machine import I2C, Pin
 
 # TinyPICO (ESP32)
-i2c = I2C(scl=Pin(22), sda=Pin(21))
+i2c = I2C(0)
 pcf = pcf8574.PCF8574(i2c, 0x20)
 
 # read pin 2
@@ -53,13 +70,21 @@ pcf.pin(4, 0)
 pcf.toggle(5)
 
 # set all pins at once with 8-bit int
-pcf.port = 0xff
+pcf.port = 0xFF
 
 # read all pins at once as 8-bit int
 pcf.port
+# returns 255 (0xFF)
 ```
 
 For more detailed examples, see [examples](/examples).
+
+If you mip installed them above, you can run them like so:
+
+```python
+import pcf8574.examples.basic
+```
+
 
 #### Pins
 
@@ -82,6 +107,7 @@ SCL  | I    | I2C Serial Clock, needs pull-up
 GND  | PWR  | Ground
 VCC  | PWR  | Supply voltage 3.3-5V
 
+
 ## Methods
 
 Construct with a reference to I2C and set the device address.
@@ -90,6 +116,12 @@ If are you not sure what it is, run an `i2c.scan()`.
 See below for address selection.
 ```python
 __init__(i2c, address=0x20)
+```
+
+Scans the I2C bus for the provided address and returns True if a device is present
+otherwise raises an OSError.
+```python
+check()
 ```
 
 Method for getting or setting a single pin.
@@ -108,6 +140,11 @@ Valid pin range 0-7.
 toggle(pin)
 ```
 
+Private method for checking the supplied pin number is within the valid range.
+```python
+_validate_pin()
+```
+
 Private method for loading _port from the device.
 ```python
 _read()
@@ -117,6 +154,7 @@ Private method for sending _port to the device.
 ```python
 _write()
 ```
+
 
 ## Properties
 
@@ -129,24 +167,29 @@ Setter writes an 8-bit integer representing the port to the device.
 If you are setting multiple pins at once, use this instead of the pin() method as
 this writes the entire 8-bit port to the device once, rather than 8 separate writes.
 ```python
-port = 0xffff
+port = 0xFF
 ```
+
 
 ## Ports
 
 * P00-P07 - Port A
 
-This chip only has one port. If you need more pins, the [PCF8575](https://github.com/mcauser/micropython-pcf8575) has two ports (another 8 pins).
+This chip only has one port (8 pins). If you need more pins, the
+[PCF8575](https://github.com/mcauser/micropython-pcf8575) has two ports (16 pins).
+
 
 ## Interrupts
 
 * INT - Active LOW
+
 
 ## I2C Interface
 
 If you are using a module, most contain 10k pull-ups on the SCL and SDA lines.
 
 If you are using the PCF8574 chip directly, you'll need to add your own.
+
 
 ### I2C Address
 
@@ -163,31 +206,47 @@ GND | GND | 3V3 | 0x24
 GND | 3V3 | 3V3 | 0x26
 3V3 | 3V3 | 3V3 | 0x27
 
+
 ## Parts
 
-* [TinyPICO](https://www.tinypico.com/) $20.00 USD
-* [PCF8574 10x DIP](https://www.aliexpress.com/item/32933373566.html) $3.00 AUD
-* [PCF8574 blue board](https://www.aliexpress.com/item/32224660654.html) $0.83 AUD
-* [PCF8574 red board](https://www.aliexpress.com/item/32441163158.html) $0.95 AUD
-* [PCF8574 purple board](https://www.aliexpress.com/item/32805562508.html) $0.99 AUD
-* [PCF8574 as LCD backpack](https://www.aliexpress.com/item/32654514649.html) $0.98 AUD
+* [PCF8574 blue chainable board](https://s.click.aliexpress.com/e/_DdzV1ZR)
+* [PCF8574 blue chainable board](https://s.click.aliexpress.com/e/_DlQkWZj)
+* [PCF8574 red board DIP switch](https://s.click.aliexpress.com/e/_DevQFrx)
+* [PCF8574 red board DIP switch](https://s.click.aliexpress.com/e/_Dmeylnb)
+* [PCF8574 purple board](https://s.click.aliexpress.com/e/_DlcJB2t)
+* [PCF8574 as 1602 LCD backpack](https://s.click.aliexpress.com/e/_DlcJB2t)
+* [PCF8574 10x DIP-16](https://s.click.aliexpress.com/e/_Dn3xoYh)
+* [PCF8574 5x SOP-16](https://s.click.aliexpress.com/e/_DC1lqxn)
+* [TinyPICO](https://www.tinypico.com/)
+
 
 ## Connections
 
-TinyPICO | PCF8574 Module
--------- | ----------
-21 SDA   | SDA
-22 SCL   | SCL
-3V3      | VCC
-G        | GND
-4        | INT (optional)
+### TinyPICO ESP32
+
+```python
+from machine import SoftI2C, Pin
+i2c = SoftI2C(scl=Pin(22), sda=Pin(21))
+
+from machine import I2C, Pin
+i2c = I2C(0)
+```
+
+PCF8574 Module | TinyPICO (ESP32)
+-------------- | ----------------
+SDA            | 21 (SDA)
+SCL            | 22 (SCL)
+VCC            | 3V3
+GND            | GND
+INT (optional) | 4
+
 
 ## Links
 
-* [TinyPICO Getting Started](https://www.tinypico.com/gettingstarted)
 * [micropython.org](http://micropython.org)
 * [PCF8574 datasheet](docs/pcf8574.pdf)
-* [Adafruit Ampy](https://learn.adafruit.com/micropython-basics-load-files-and-run-code/install-ampy)
+* [TinyPICO Getting Started](https://www.tinypico.com/gettingstarted)
+
 
 ## License
 
